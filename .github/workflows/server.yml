@@ -33,6 +33,8 @@ jobs:
 
       - name: Set up JDK
         uses: actions/setup-java@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           distribution: 'jetbrains'
           java-version: 25

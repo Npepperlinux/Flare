@@ -43,9 +43,9 @@ dependencies {
     implementation(libs.reorderable)
     implementation(libs.jna)
     implementation("io.github.kdroidfilter:composemediaplayer:0.8.7")
-    implementation("io.github.kdroidfilter:nucleus.darkmode-detector:1.1.6")
-    implementation("io.github.kdroidfilter:nucleus.aot-runtime:1.1.6")
-    implementation("io.github.kdroidfilter:nucleus.decorated-window:1.1.6")
+    implementation("io.github.kdroidfilter:nucleus.darkmode-detector:1.2.6")
+    implementation("io.github.kdroidfilter:nucleus.aot-runtime:1.2.6")
+    implementation("io.github.kdroidfilter:nucleus.decorated-window:1.2.6")
     implementation("io.github.kdroidfilter:composewebview:1.0.0-alpha-10")
 }
 
