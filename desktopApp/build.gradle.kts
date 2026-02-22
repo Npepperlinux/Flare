@@ -134,6 +134,7 @@ nucleus.application {
         }
         linux {
             iconFile.set(project.file("resources/ic_launcher.png"))
+            appCategory = "Network"
             flatpak {
                 runtime = "org.freedesktop.Platform"
                 runtimeVersion = "24.08"
@@ -223,17 +224,17 @@ ktlint {
 // register deeplinks
 val macExtraPlistKeys: String
     get() = """
-      <key>CFBundleURLTypes</key>
-      <array>
-        <dict>
-          <key>CFBundleURLName</key>
-          <string>FlareScheme</string>
-          <key>CFBundleURLSchemes</key>
-          <array>
-            <string>flare</string>
-          </array>
-        </dict>
-      </array>
+//      <key>CFBundleURLTypes</key>
+//      <array>
+//        <dict>
+//          <key>CFBundleURLName</key>
+//          <string>FlareScheme</string>
+//          <key>CFBundleURLSchemes</key>
+//          <array>
+//            <string>flare</string>
+//          </array>
+//        </dict>
+//      </array>
       <key>ITSAppUsesNonExemptEncryption</key>
       <false/>
       <key>LSMultipleInstancesProhibited</key>
