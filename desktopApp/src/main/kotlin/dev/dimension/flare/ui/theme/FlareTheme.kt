@@ -277,7 +277,7 @@ internal fun ProvideNucleusDecoratedWindowTheme(
                             if (SystemUtils.IS_OS_MAC_OSX) {
                                 24.dp
                             } else {
-                                40.dp
+                                32.dp
                             },
                     ),
             )

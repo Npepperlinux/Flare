@@ -1,4 +1,5 @@
 
+import io.github.kdroidfilter.nucleus.desktop.application.dsl.CompressionLevel
 import org.jetbrains.compose.compose
 
 plugins {
@@ -66,7 +67,8 @@ nucleus.application {
         cleanupNativeLibs = true
         enableAotCache = true
         homepage = "https://github.com/DimensionDev/Flare"
-        appResourcesRootDir.set(file("resources"))
+//        appResourcesRootDir.set(file("resources"))
+        compressionLevel = CompressionLevel.Maximum
         targetFormats(
             io.github.kdroidfilter.nucleus.desktop.application.dsl.TargetFormat.Pkg,
             io.github.kdroidfilter.nucleus.desktop.application.dsl.TargetFormat.Flatpak,
