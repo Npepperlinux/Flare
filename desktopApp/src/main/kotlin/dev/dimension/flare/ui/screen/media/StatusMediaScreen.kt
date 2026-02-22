@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -56,8 +57,10 @@ import dev.dimension.flare.ui.component.NetworkImage
 import dev.dimension.flare.ui.component.status.MediaItem
 import dev.dimension.flare.ui.model.UiMedia
 import dev.dimension.flare.ui.model.UiTimeline
+import dev.dimension.flare.ui.model.getFileName
 import dev.dimension.flare.ui.model.map
 import dev.dimension.flare.ui.model.onSuccess
+import dev.dimension.flare.ui.model.takeSuccess
 import dev.dimension.flare.ui.presenter.invoke
 import dev.dimension.flare.ui.presenter.status.StatusPresenter
 import dev.dimension.flare.ui.presenter.status.StatusState
@@ -136,18 +139,30 @@ internal fun StatusMediaScreen(
                             DisposableEffect(Unit) {
                                 playerState.openUri(media.url)
                                 onDispose {
+                                    playerState.stop()
                                     playerState.dispose()
                                 }
                             }
                             VideoPlayerSurface(
                                 playerState = playerState,
-                                modifier = Modifier.fillMaxSize(),
+                                modifier =
+                                    Modifier
+                                        .fillMaxSize()
+                                        .clickable {
+                                            state.setShowThumbnailList(!state.showThumbnailList)
+                                        },
                             )
                         } else {
-                            MediaItem(
-                                media = media,
+                            ImageItem(
                                 modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Fit,
+                                url = media.thumbnailUrl,
+                                previewUrl = media.thumbnailUrl,
+                                description = media.description,
+                                isFocused = pagerState.currentPage == it,
+                                setLockPager = state::setLockPager,
+                                onClick = {
+                                    state.setShowThumbnailList(!state.showThumbnailList)
+                                },
                             )
                         }
                     }
@@ -365,7 +380,7 @@ private fun presenter(
     window: ComposeWindow?,
 ) = run {
     var lockPager by remember { mutableStateOf(false) }
-    var showThumbnailList by remember { mutableStateOf(false) }
+    var showThumbnailList by remember { mutableStateOf(true) }
     val state =
         remember(
             "StatusMediaScreen_${accountType}_$statusKey",
@@ -400,15 +415,27 @@ private fun presenter(
         }
 
         fun save(item: UiMedia) {
-            val url = item.url
-            val fileName = url.substring(url.lastIndexOf("/") + 1)
-            FileDialog(window).apply {
-                mode = FileDialog.SAVE
-                file = fileName
-                isVisible = true
-                val dir = directory
-                val file = file
-                if (!dir.isNullOrEmpty() && !file.isNullOrEmpty()) {
+            val status = (state.status.takeSuccess()?.content as? UiTimeline.ItemContent.Status)
+            if (status != null) {
+                val statusKey = status.statusKey.toString()
+                val userHandle = status.user?.handle ?: "unknown"
+                val fileName = item.getFileName(statusKey, userHandle)
+
+                when (item) {
+                    is UiMedia.Audio -> Unit
+                    is UiMedia.Gif -> Unit
+                    is UiMedia.Image -> {
+                        FileDialog(window).apply {
+                            mode = FileDialog.SAVE
+                            file = fileName
+                            isVisible = true
+                            val dir = directory
+                            val file = file
+                            if (!dir.isNullOrEmpty() && !file.isNullOrEmpty()) {
+                            }
+                        }
+                    }
+                    is UiMedia.Video -> Unit
                 }
             }
         }

@@ -18,11 +18,12 @@ internal fun WebViewLoginScreen(
 ) {
     val state = rememberWebViewState(url)
     LaunchedEffect(Unit) {
+        state.cookieManager.removeAllCookies()
         val urlData = Url(url)
         val actualUrl =
             urlData.protocol.name
                 .plus("://")
-                .plus(urlData.host)
+                .plus(urlData.host.removePrefix("m."))
                 .plus("/")
         while (true) {
             delay(2.seconds)

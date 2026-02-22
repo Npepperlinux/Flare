@@ -1,10 +1,12 @@
 package dev.dimension.flare.ui.route
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.rememberWindowState
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.scene.OverlayScene
 import androidx.navigation3.scene.Scene
@@ -13,14 +15,12 @@ import androidx.navigation3.scene.SceneStrategyScope
 import dev.dimension.flare.Res
 import dev.dimension.flare.app_name
 import dev.dimension.flare.flare_logo
+import dev.dimension.flare.ui.component.PlatformTitleBar
 import dev.dimension.flare.ui.route.WindowSceneStrategy.Companion.window
 import dev.dimension.flare.ui.theme.FlareTheme
 import dev.dimension.flare.ui.theme.ProvideComposeWindow
-import io.github.composefluent.FluentTheme
+import dev.dimension.flare.ui.theme.ProvideNucleusDecoratedWindowTheme
 import io.github.kdroidfilter.nucleus.window.DecoratedWindow
-import io.github.kdroidfilter.nucleus.window.NucleusDecoratedWindowTheme
-import io.github.kdroidfilter.nucleus.window.TitleBar
-import io.github.kdroidfilter.nucleus.window.styling.LocalTitleBarStyle
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -36,10 +36,18 @@ internal class WindowScene<T : Any>(
     override val entries: List<NavEntry<T>> = listOf(entry)
 
     override val content: @Composable (() -> Unit) = {
-        NucleusDecoratedWindowTheme(
+        ProvideNucleusDecoratedWindowTheme(
             isDark = isDarkTheme,
         ) {
             DecoratedWindow(
+                state =
+                    rememberWindowState(
+                        size =
+                            DpSize(
+                                width = 1280.dp,
+                                height = 768.dp,
+                            ),
+                    ),
                 onCloseRequest = onBack,
                 title = stringResource(Res.string.app_name),
                 icon = painterResource(Res.drawable.flare_logo),
@@ -58,18 +66,7 @@ internal class WindowScene<T : Any>(
                     ProvideComposeWindow {
                         entry.Content()
                     }
-                    TitleBar(
-                        style =
-                            LocalTitleBarStyle.current.copy(
-                                colors =
-                                    LocalTitleBarStyle.current.colors.copy(
-                                        background =
-                                            FluentTheme.colors.background.mica.base
-                                                .copy(alpha = 0f),
-                                        inactiveBackground = Color.Transparent,
-                                    ),
-                            ),
-                    ) {
+                    PlatformTitleBar {
                     }
                 }
             }

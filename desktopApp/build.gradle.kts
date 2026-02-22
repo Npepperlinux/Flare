@@ -8,7 +8,7 @@ plugins {
     alias(libs.plugins.ktlint)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.stability.analyzer)
-    id("io.github.kdroidfilter.nucleus") version "1.1.6"
+    id("io.github.kdroidfilter.nucleus") version "1.2.6"
 }
 
 dependencies {
@@ -51,6 +51,17 @@ dependencies {
 nucleus.application {
     jvmArgs += "--enable-native-access=ALL-UNNAMED"
     mainClass = "dev.dimension.flare.MainKt"
+    buildTypes {
+        release {
+            proguard {
+                this.isEnabled.set(false)
+                // version.set("7.7.0")
+                // this.configurationFiles.from(
+                // file("proguard-rules.pro")
+                // )
+            }
+        }
+    }
     nativeDistributions {
         cleanupNativeLibs = true
         enableAotCache = true
@@ -62,7 +73,7 @@ nucleus.application {
             io.github.kdroidfilter.nucleus.desktop.application.dsl.TargetFormat.AppX,
         )
         packageName = "Flare"
-        val buildVersion = System.getenv("BUILD_VERSION")?.toString()?.takeIf {
+        val buildVersion = System.getenv("BUILD_VERSION")?.takeIf {
             // match semantic versioning
             Regex("""\d+\.\d+\.\d+(-\S+)?""").matches(it)
         } ?: "1.0.0"
@@ -102,6 +113,21 @@ nucleus.application {
         windows {
             iconFile.set(project.file("resources/ic_launcher.ico"))
             appx {
+                applicationId = "FlareApp"
+                publisherDisplayName = "Tlaster"
+                displayName = "FlareApp"
+                publisher = "CN=F82B0EE7-EF8D-4515-BEAB-DD968D07D67F"
+                identityName = "51945Tlaster.FlareApp"
+                languages = listOf("en-US")
+                backgroundColor = "#09AD9F"
+                showNameOnTiles = true
+                minVersion = "10.0.17763.0"
+                capabilities = listOf("runFullTrust")
+
+                storeLogo.set(project.file("resources/appx/StoreLogo.scale-100.png"))
+                square44x44Logo.set(project.file("resources/appx/Square44x44Logo.scale-100.png"))
+                square150x150Logo.set(project.file("resources/appx/Square150x150Logo.scale-100.png"))
+                wide310x150Logo.set(project.file("resources/appx/Wide310x150Logo.scale-100.png"))
             }
         }
         linux {

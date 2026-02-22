@@ -1,6 +1,5 @@
 package dev.dimension.flare
 
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -10,7 +9,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowPosition
@@ -26,17 +24,15 @@ import dev.dimension.flare.data.network.ktorClient
 import dev.dimension.flare.di.KoinHelper
 import dev.dimension.flare.di.composeUiModule
 import dev.dimension.flare.di.desktopModule
+import dev.dimension.flare.ui.component.PlatformTitleBar
 import dev.dimension.flare.ui.theme.FlareTheme
 import dev.dimension.flare.ui.theme.ProvideComposeWindow
 import dev.dimension.flare.ui.theme.ProvideThemeSettings
-import io.github.composefluent.FluentTheme
 import io.github.composefluent.component.NavigationDefaults
 import io.github.kdroidfilter.nucleus.aot.runtime.AotRuntime
 import io.github.kdroidfilter.nucleus.core.runtime.DeepLinkHandler
 import io.github.kdroidfilter.nucleus.core.runtime.SingleInstanceManager
 import io.github.kdroidfilter.nucleus.window.DecoratedWindow
-import io.github.kdroidfilter.nucleus.window.TitleBar
-import io.github.kdroidfilter.nucleus.window.styling.LocalTitleBarStyle
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.apache.commons.lang3.SystemUtils
 import org.jetbrains.compose.resources.painterResource
@@ -123,21 +119,8 @@ fun main(args: Array<String>) {
                             backButtonState = backButtonState,
                         )
                     }
-                    TitleBar(
-                        style =
-                            LocalTitleBarStyle.current.copy(
-                                colors =
-                                    LocalTitleBarStyle.current.colors.copy(
-                                        background =
-                                            FluentTheme.colors.background.mica.base
-                                                .copy(alpha = 0f),
-                                        inactiveBackground = Color.Transparent,
-                                    ),
-                            ),
-                    ) {
-                        Row(
-                            modifier = Modifier.align(Alignment.Start),
-                        ) {
+                    PlatformTitleBar {
+                        if (backButtonState.canGoBack) {
                             NavigationDefaults.BackButton(
                                 onClick = {
                                     backButtonState.onClick.invoke()
@@ -151,7 +134,6 @@ fun main(args: Array<String>) {
                                                 it
                                             }
                                         },
-                                disabled = !backButtonState.canGoBack,
                             )
                         }
                     }

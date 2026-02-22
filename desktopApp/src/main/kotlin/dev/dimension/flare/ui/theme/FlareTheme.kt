@@ -247,24 +247,9 @@ internal fun ProvideThemeSettings(content: @Composable () -> Unit) {
                 },
             LocalWifiState provides true,
             content = {
-                val isDark = isDarkTheme()
-                val titleBarStyle =
-                    if (isDark) {
-                        DecoratedWindowDefaults.darkTitleBarStyle()
-                    } else {
-                        DecoratedWindowDefaults.lightTitleBarStyle()
-                    }.let {
-                        it.copy(
-                            metrics =
-                                it.metrics.copy(
-                                    height = 40.dp,
-                                ),
-                        )
-                    }
                 key(appSettings.language) {
-                    NucleusDecoratedWindowTheme(
-                        isDark = isDark,
-                        titleBarStyle = titleBarStyle,
+                    ProvideNucleusDecoratedWindowTheme(
+                        isDark = isDarkTheme(),
                     ) {
                         content.invoke()
                     }
@@ -272,4 +257,34 @@ internal fun ProvideThemeSettings(content: @Composable () -> Unit) {
             },
         )
     }
+}
+
+@Composable
+internal fun ProvideNucleusDecoratedWindowTheme(
+    isDark: Boolean = true,
+    content: @Composable () -> Unit,
+) {
+    val titleBarStyle =
+        if (isDark) {
+            DecoratedWindowDefaults.darkTitleBarStyle()
+        } else {
+            DecoratedWindowDefaults.lightTitleBarStyle()
+        }.let {
+            it.copy(
+                metrics =
+                    it.metrics.copy(
+                        height =
+                            if (SystemUtils.IS_OS_MAC_OSX) {
+                                24.dp
+                            } else {
+                                40.dp
+                            },
+                    ),
+            )
+        }
+    NucleusDecoratedWindowTheme(
+        titleBarStyle = titleBarStyle,
+        isDark = isDark,
+        content = content,
+    )
 }

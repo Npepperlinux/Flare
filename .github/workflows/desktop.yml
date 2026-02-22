@@ -100,39 +100,13 @@ jobs:
         env:
           BUILD_NUMBER: ${{github.run_number}}
           BUILD_VERSION: ${{github.ref_name}}
-        run: ./gradlew :desktop:createReleaseDistributable
-      - name: Install .NET
-        uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: '9'
-      - name: Setup MSBuild.exe
-        uses: microsoft/setup-msbuild@v2
-      - name: Restore the application
-        working-directory: desktopApp/src/main/csharp
-        run: msbuild $env:Solution_Name /t:Restore /p:Configuration=$env:Configuration
-        env:
-          Configuration: Release
-      - name: Create the app package
-        working-directory: desktopApp/src/main/csharp
-        run: msbuild $env:Solution_Name /t:Build /p:Configuration=Release /p:Platform=x64 /p:EnableComposeAutoBuild=false
-      - name: Copy MSIX files
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          mkdir desktopApp/src/main/csharp/AppPackages/OnlyMsixFilesFolder
-          cp desktopApp/src/main/csharp/AppPackages/**/*.msix desktopApp/src/main/csharp/AppPackages/OnlyMsixFilesFolder -Force
-      - name: Make msixbundle with Tag name
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: LanceMcCarthy/Action-MsixBundler@v3
-        with:
-          msix-folder: "desktopApp/src/main/csharp/AppPackages/OnlyMsixFilesFolder"
-          msixbundle-filepath: "desktopApp/src/main/csharp/AppPackages/Flare.msixbundle"
-          msixbundle-version: ${{ format('{0}.0', github.ref_name) }}
+        run: ./gradlew :desktop:packageReleaseAppx --stacktrace
       - name: Upload MSIX package
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
           name: Windows-package
-          path: desktopApp/src/main/csharp/AppPackages/Flare.msixbundle
+          path: desktopApp/build/compose/binaries/main-release/pkg/*.appx
   upload:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: [ubuntu-latest]
