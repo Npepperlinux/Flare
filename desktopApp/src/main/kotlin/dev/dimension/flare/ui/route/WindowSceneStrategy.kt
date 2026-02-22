@@ -16,11 +16,11 @@ import dev.dimension.flare.Res
 import dev.dimension.flare.app_name
 import dev.dimension.flare.flare_logo
 import dev.dimension.flare.ui.component.PlatformTitleBar
+import dev.dimension.flare.ui.component.PlatformWindow
 import dev.dimension.flare.ui.route.WindowSceneStrategy.Companion.window
 import dev.dimension.flare.ui.theme.FlareTheme
 import dev.dimension.flare.ui.theme.ProvideComposeWindow
 import dev.dimension.flare.ui.theme.ProvideNucleusDecoratedWindowTheme
-import io.github.kdroidfilter.nucleus.window.DecoratedWindow
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -39,7 +39,7 @@ internal class WindowScene<T : Any>(
         ProvideNucleusDecoratedWindowTheme(
             isDark = isDarkTheme,
         ) {
-            DecoratedWindow(
+            PlatformWindow(
                 state =
                     rememberWindowState(
                         size =

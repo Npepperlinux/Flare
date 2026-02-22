@@ -25,6 +25,7 @@ import dev.dimension.flare.di.KoinHelper
 import dev.dimension.flare.di.composeUiModule
 import dev.dimension.flare.di.desktopModule
 import dev.dimension.flare.ui.component.PlatformTitleBar
+import dev.dimension.flare.ui.component.PlatformWindow
 import dev.dimension.flare.ui.theme.FlareTheme
 import dev.dimension.flare.ui.theme.ProvideComposeWindow
 import dev.dimension.flare.ui.theme.ProvideThemeSettings
@@ -32,7 +33,6 @@ import io.github.composefluent.component.NavigationDefaults
 import io.github.kdroidfilter.nucleus.aot.runtime.AotRuntime
 import io.github.kdroidfilter.nucleus.core.runtime.DeepLinkHandler
 import io.github.kdroidfilter.nucleus.core.runtime.SingleInstanceManager
-import io.github.kdroidfilter.nucleus.window.DecoratedWindow
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.apache.commons.lang3.SystemUtils
 import org.jetbrains.compose.resources.painterResource
@@ -90,7 +90,7 @@ fun main(args: Array<String>) {
                 .build()
         }
         ProvideThemeSettings {
-            DecoratedWindow(
+            PlatformWindow(
                 onCloseRequest = {
                     exitApplication()
                 },
