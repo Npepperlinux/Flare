@@ -69,7 +69,7 @@ nucleus.application {
     }
     nativeDistributions {
         cleanupNativeLibs = true
-        enableAotCache = false
+        enableAotCache = true
         homepage = "https://github.com/DimensionDev/Flare"
         compressionLevel = CompressionLevel.Maximum
         targetFormats(
