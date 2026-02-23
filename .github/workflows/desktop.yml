@@ -45,10 +45,6 @@ jobs:
         with:
           p12-file-base64: ${{ secrets.MACOS_CERT_BASE64 }}
           p12-password: ${{ secrets.MACOS_CERT_PASSWORD }}
-          keychain: "build"
-      - name: update keychain
-        run: |
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k ${{ steps.import-cert.outputs.keychain-password }} "build.keychain"
       - name: Create Embedded Provision Profile
         # if: startsWith(github.ref, 'refs/tags/')
         run: |
@@ -74,11 +70,9 @@ jobs:
       - name: Package with Gradle
         # if: startsWith(github.ref, 'refs/tags/')
         env:
-          # CSC_KEYCHAIN: build.keychain
-          # CSC_IDENTITY_AUTO_DISCOVERY: "true"
           BUILD_NUMBER: ${{github.run_number}}
           BUILD_VERSION: ${{github.ref_name}}
-        run: ./gradlew :desktop:packageReleasePkg --stacktrace --info
+        run: ./gradlew :desktop:packageReleasePkg --stacktrace
       - name: Archive macOS artifacts Product
         # if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v6
