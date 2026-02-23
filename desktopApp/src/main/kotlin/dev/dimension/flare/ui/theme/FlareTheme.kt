@@ -47,10 +47,10 @@ import io.github.kdroidfilter.nucleus.darkmodedetector.isSystemInDarkMode
 import io.github.kdroidfilter.nucleus.window.DecoratedWindowDefaults
 import io.github.kdroidfilter.nucleus.window.NucleusDecoratedWindowTheme
 import io.github.kdroidfilter.nucleus.window.styling.LocalTitleBarStyle
-import java.util.Locale
 import kotlinx.coroutines.launch
 import org.apache.commons.lang3.SystemUtils
 import org.koin.compose.koinInject
+import java.util.Locale
 
 internal val LocalComposeWindow =
     staticCompositionLocalOf<ComposeWindow?> {
