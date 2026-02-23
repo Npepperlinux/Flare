@@ -1,4 +1,5 @@
 
+import io.github.kdroidfilter.nucleus.desktop.application.dsl.AppImageCategory
 import io.github.kdroidfilter.nucleus.desktop.application.dsl.CompressionLevel
 import org.jetbrains.compose.compose
 
@@ -9,7 +10,7 @@ plugins {
     alias(libs.plugins.ktlint)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.stability.analyzer)
-    id("io.github.kdroidfilter.nucleus") version "1.2.6"
+    alias(libs.plugins.nucleus)
 }
 
 dependencies {
@@ -42,11 +43,11 @@ dependencies {
     implementation(libs.datastore)
     implementation(libs.reorderable)
     implementation(libs.jna)
-    implementation("io.github.kdroidfilter:composemediaplayer:0.8.7")
-    implementation("io.github.kdroidfilter:nucleus.darkmode-detector:1.2.6")
-    implementation("io.github.kdroidfilter:nucleus.aot-runtime:1.2.6")
-    implementation("io.github.kdroidfilter:nucleus.decorated-window:1.2.6")
-    implementation("io.github.kdroidfilter:composewebview:1.0.0-alpha-10")
+    implementation(libs.composemediaplayer)
+    implementation(libs.nucleus.darkmode.detector)
+    implementation(libs.nucleus.aot.runtime)
+    implementation(libs.nucleus.decorated.window)
+    implementation(libs.composewebview)
 }
 
 nucleus.application {
@@ -71,7 +72,7 @@ nucleus.application {
         compressionLevel = CompressionLevel.Maximum
         targetFormats(
             io.github.kdroidfilter.nucleus.desktop.application.dsl.TargetFormat.Pkg,
-            io.github.kdroidfilter.nucleus.desktop.application.dsl.TargetFormat.Flatpak,
+            io.github.kdroidfilter.nucleus.desktop.application.dsl.TargetFormat.AppImage,
             io.github.kdroidfilter.nucleus.desktop.application.dsl.TargetFormat.AppX,
         )
         packageName = "Flare"
@@ -135,12 +136,9 @@ nucleus.application {
         linux {
             iconFile.set(project.file("resources/ic_launcher.png"))
             appCategory = "Network"
-            flatpak {
-                runtime = "org.freedesktop.Platform"
-                runtimeVersion = "24.08"
-                sdk = "org.freedesktop.Sdk"
-                branch = "master"
-                finishArgs = listOf("--share=ipc", "--socket=x11", "--socket=wayland")
+            appImage {
+                category = AppImageCategory.Network
+                genericName = "Flare"
             }
         }
     }

@@ -121,14 +121,6 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - name: Install Flatpak
-        shell: bash
-        run: |
-          set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y flatpak flatpak-builder
-          flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-          flatpak --user install -y flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08
       - name: Set up JDK
         uses: actions/setup-java@v5
         env:
@@ -149,13 +141,13 @@ jobs:
         env:
           BUILD_NUMBER: ${{github.run_number}}
           BUILD_VERSION: ${{github.ref_name}}
-        run: ./gradlew :desktop:packageReleaseFlatpak --stacktrace
-      - name: Upload Flatpak package
+        run: ./gradlew :desktop:packageReleaseAppImage --stacktrace
+      - name: Upload AppImage package
         # if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v6
         with:
           name: Linux-package
-          path: desktopApp/build/compose/binaries/main-release/flatpack/*.flatpak
+          path: desktopApp/build/compose/binaries/main-release/appimage/*.appimage
 
   upload:
     if: startsWith(github.ref, 'refs/tags/')
@@ -171,4 +163,4 @@ jobs:
           files: |
             **/*.msixbundle
             **/*.pkg
-            **/*.flatpak
+            **/*.appimage

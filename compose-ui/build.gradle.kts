@@ -84,7 +84,7 @@ kotlin {
                 implementation(libs.fluent.ui)
                 implementation(libs.koin.compose)
                 implementation(libs.androidx.collection)
-                implementation("io.github.kdroidfilter:composemediaplayer:0.8.7")
+                implementation(libs.composemediaplayer)
             }
         }
         val iosMain by getting {
