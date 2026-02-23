@@ -20,6 +20,7 @@ on:
 jobs:
   build-macos:
     runs-on: [macos-26]
+    timeout-minutes: 30
     steps:
       - uses: yumis-coconudge/clean-workspace-action@v1
 
@@ -57,6 +58,9 @@ jobs:
           base64 -d -i desktopApp/runtime.provisionprofile.b64 > desktopApp/runtime.provisionprofile    
         env:
           MACOS_RUNTIME_PROVISION: ${{ secrets.MACOS_RUNTIME_PROVISION }}
+      - name: enable keychain access for the imported certs
+        # if: startsWith(github.ref, 'refs/tags/')
+        run: sudo security authorizationdb write com.apple.trust-settings.admin allow
       # Run tests
       - name: Run Tests
         run: ./gradlew jvmTest
