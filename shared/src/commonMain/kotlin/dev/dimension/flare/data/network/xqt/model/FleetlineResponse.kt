@@ -34,11 +34,11 @@ internal data class Thread(
 
 @Serializable
 internal data class LiveContent(
-    val audiospace: Audiospace? = null,
+    val audiospace: AudiospaceData? = null,
 )
 
 @Serializable
-internal data class Audiospace(
+internal data class AudiospaceData(
     @SerialName("broadcast_id")
     val broadcastID: String? = null,
     val id: String? = null,

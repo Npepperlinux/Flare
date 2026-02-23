@@ -43,11 +43,14 @@ dependencies {
     implementation(libs.datastore)
     implementation(libs.reorderable)
     implementation(libs.jna)
-    implementation(libs.composemediaplayer)
     implementation(libs.nucleus.darkmode.detector)
     implementation(libs.nucleus.aot.runtime)
     implementation(libs.nucleus.decorated.window)
     implementation(libs.composewebview)
+    implementation("io.github.kdroidfilter:composemediaplayer:${libs.versions.composemediaplayer.get()}") {
+        // https://github.com/kdroidFilter/ComposeMediaPlayer/blob/13cb1d94382f300d338c6ca3b9098c52b2b61d6a/mediaplayer/build.gradle.kts#L82
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-test")
+    }
 }
 
 nucleus.application {
@@ -89,6 +92,7 @@ nucleus.application {
             bundleID = "dev.dimension.flare"
             minimumSystemVersion = "14.0"
             appStore = hasSigningProps
+            appCategory = "public.app-category.social-networking"
 
             jvmArgs(
                 "-Dapple.awt.application.appearance=system",
