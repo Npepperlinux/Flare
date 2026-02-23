@@ -81,8 +81,9 @@ nucleus.application {
         val buildVersion = System.getenv("BUILD_VERSION")?.takeIf {
             // match semantic versioning
             Regex("""\d+\.\d+\.\d+(-\S+)?""").matches(it)
-        } ?: "1.0.0"
+        } ?: "1.2.2"
         packageVersion = buildVersion
+        artifactName = $$"Flare-$${buildVersion}.${ext}"
 
         protocol("Flare", "flare")
 
