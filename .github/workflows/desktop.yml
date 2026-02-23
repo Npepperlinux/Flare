@@ -35,20 +35,20 @@ jobs:
           distribution: 'jetbrains'
           java-version: 25
       - name: import certs
-        if: startsWith(github.ref, 'refs/tags/')
+        # if: startsWith(github.ref, 'refs/tags/')
         uses: apple-actions/import-codesign-certs@v5
         with:
           p12-file-base64: ${{ secrets.MACOS_CERT_BASE64 }}
           p12-password: ${{ secrets.MACOS_CERT_PASSWORD }}
       - name: Create Embedded Provision Profile
-        if: startsWith(github.ref, 'refs/tags/')
+        # if: startsWith(github.ref, 'refs/tags/')
         run: |
           echo "$MACOS_EMBEDDED_PROVISION" > desktopApp/embedded.provisionprofile.b64
           base64 -d -i desktopApp/embedded.provisionprofile.b64 > desktopApp/embedded.provisionprofile    
         env:
           MACOS_EMBEDDED_PROVISION: ${{ secrets.MACOS_EMBEDDED_PROVISION }}
       - name: Create Runtime Provision Profile
-        if: startsWith(github.ref, 'refs/tags/')
+        # if: startsWith(github.ref, 'refs/tags/')
         run: |
           echo "$MACOS_RUNTIME_PROVISION" > desktopApp/runtime.provisionprofile.b64
           base64 -d -i desktopApp/runtime.provisionprofile.b64 > desktopApp/runtime.provisionprofile    
@@ -63,7 +63,7 @@ jobs:
           BUILD_VERSION: ${{github.ref_name}}
         run: ./gradlew :desktop:check :desktop:build --stacktrace
       - name: Package with Gradle
-        if: startsWith(github.ref, 'refs/tags/')
+        # if: startsWith(github.ref, 'refs/tags/')
         env:
           BUILD_NUMBER: ${{github.run_number}}
           BUILD_VERSION: ${{github.ref_name}}
@@ -95,6 +95,12 @@ jobs:
       - name: Run Tests
         run: ./gradlew jvmTest
       - name: Build with Gradle
+        env:
+          BUILD_NUMBER: ${{github.run_number}}
+          BUILD_VERSION: ${{github.ref_name}}
+        run: ./gradlew :desktop:check :desktop:build --stacktrace
+      - name: Package with Gradle
+        # if: startsWith(github.ref, 'refs/tags/')
         env:
           BUILD_NUMBER: ${{github.run_number}}
           BUILD_VERSION: ${{github.ref_name}}
@@ -134,6 +140,12 @@ jobs:
       - name: Run Tests
         run: ./gradlew jvmTest
       - name: Build with Gradle
+        env:
+          BUILD_NUMBER: ${{github.run_number}}
+          BUILD_VERSION: ${{github.ref_name}}
+        run: ./gradlew :desktop:check :desktop:build --stacktrace
+      - name: Package with Gradle
+        # if: startsWith(github.ref, 'refs/tags/')
         env:
           BUILD_NUMBER: ${{github.run_number}}
           BUILD_VERSION: ${{github.ref_name}}
