@@ -102,7 +102,7 @@ nucleus.application {
             if (hasSigningProps) {
                 signing {
                     sign.set(true)
-                    identity.set("SUJITEKU LIMITED LIABILITY CO.")
+                    identity.set("SUJITEKU LIMITED LIABILITY CO. (7LFDZ96332)")
                 }
 
                 entitlementsFile.set(project.file("entitlements.plist"))
@@ -121,7 +121,17 @@ nucleus.application {
                 displayName = "FlareApp"
                 publisher = "CN=F82B0EE7-EF8D-4515-BEAB-DD968D07D67F"
                 identityName = "51945Tlaster.FlareApp"
-                languages = listOf("en-US")
+
+                val resRoot = project.file("src/main/composeResources")
+
+                val locales = resRoot.listFiles()
+                    ?.filter { it.isDirectory && it.name.startsWith("values-") }
+                    ?.map { it.name.removePrefix("values-") } // e.g. "ja", "zh", "zh-rCN"
+                    ?.distinct()
+                    ?.sorted()
+                    ?.map { it.replace("-r", "-") }
+                    ?: emptyList()
+                languages = listOf("en-US") + locales
                 backgroundColor = "#09AD9F"
                 showNameOnTiles = true
                 minVersion = "10.0.17763.0"

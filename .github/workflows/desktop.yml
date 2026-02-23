@@ -147,7 +147,9 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: Linux-package
-          path: desktopApp/build/compose/binaries/main-release/appimage/*.appimage
+          path: |
+            desktopApp/build/compose/binaries/main-release/AppImage/*.appimage
+            desktopApp/build/compose/binaries/main-release/AppImage/*.AppImage
 
   upload:
     if: startsWith(github.ref, 'refs/tags/')
@@ -163,4 +165,5 @@ jobs:
           files: |
             **/*.msixbundle
             **/*.pkg
+            **/*.AppImage
             **/*.appimage
