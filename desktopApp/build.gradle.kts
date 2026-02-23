@@ -222,17 +222,6 @@ ktlint {
 // register deeplinks
 val macExtraPlistKeys: String
     get() = """
-//      <key>CFBundleURLTypes</key>
-//      <array>
-//        <dict>
-//          <key>CFBundleURLName</key>
-//          <string>FlareScheme</string>
-//          <key>CFBundleURLSchemes</key>
-//          <array>
-//            <string>flare</string>
-//          </array>
-//        </dict>
-//      </array>
       <key>ITSAppUsesNonExemptEncryption</key>
       <false/>
       <key>LSMultipleInstancesProhibited</key>
