@@ -68,7 +68,6 @@ nucleus.application {
         cleanupNativeLibs = true
         enableAotCache = true
         homepage = "https://github.com/DimensionDev/Flare"
-//        appResourcesRootDir.set(file("resources"))
         compressionLevel = CompressionLevel.Maximum
         targetFormats(
             io.github.kdroidfilter.nucleus.desktop.application.dsl.TargetFormat.Pkg,
@@ -112,6 +111,7 @@ nucleus.application {
             }
 
             iconFile.set(project.file("resources/ic_launcher.icns"))
+            layeredIconDir.set(File(project.rootDir, "iosApp/flare/AppIcon.icon"))
         }
         windows {
             iconFile.set(project.file("resources/ic_launcher.ico"))
@@ -153,69 +153,6 @@ nucleus.application {
         }
     }
 }
-
-//compose.desktop {
-//    application {
-//        mainClass = "dev.dimension.flare.MainKt"
-//
-//        nativeDistributions {
-//            targetFormats(TargetFormat.Pkg, TargetFormat.Exe, TargetFormat.Deb)
-//            packageName = "Flare"
-//            val buildVersion = System.getenv("BUILD_VERSION")?.toString()?.takeIf {
-//                // match semantic versioning
-//                Regex("""\d+\.\d+\.\d+(-\S+)?""").matches(it)
-//            } ?: "1.0.0"
-//            packageVersion = buildVersion
-//            macOS {
-//                val hasSigningProps = project.file("embedded.provisionprofile").exists() && project.file("runtime.provisionprofile").exists()
-//                packageBuildVersion = System.getenv("BUILD_NUMBER") ?: "1"
-//                bundleID = "dev.dimension.flare"
-//                minimumSystemVersion = "14.0"
-//                appStore = hasSigningProps
-//
-//                jvmArgs(
-//                    "-Dapple.awt.application.appearance=system",
-//                )
-//
-//                infoPlist {
-//                    extraKeysRawXml = macExtraPlistKeys
-//                }
-//
-//                if (hasSigningProps) {
-//                    signing {
-//                        sign.set(true)
-//                        identity.set("SUJITEKU LIMITED LIABILITY CO.")
-//                    }
-//
-//                    entitlementsFile.set(project.file("entitlements.plist"))
-//                    runtimeEntitlementsFile.set(project.file("runtime-entitlements.plist"))
-//                    provisioningProfile.set(project.file("embedded.provisionprofile"))
-//                    runtimeProvisioningProfile.set(project.file("runtime.provisionprofile"))
-//                }
-//
-//                iconFile.set(project.file("resources/ic_launcher.icns"))
-//            }
-//            windows {
-//                iconFile.set(project.file("resources/ic_launcher.ico"))
-//            }
-//            linux {
-//                iconFile.set(project.file("resources/ic_launcher.png"))
-//            }
-//            appResourcesRootDir.set(file("resources"))
-//        }
-//        buildTypes {
-//            release {
-//                proguard {
-//                   this.isEnabled.set(false)
-//                    // version.set("7.7.0")
-//                    // this.configurationFiles.from(
-//                        // file("proguard-rules.pro")
-//                    // )
-//                }
-//            }
-//        }
-//    }
-//}
 
 compose.resources {
     packageOfResClass = "dev.dimension.flare"

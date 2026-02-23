@@ -20,7 +20,7 @@ on:
 jobs:
   build-macos:
     runs-on: [macos-latest]
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: yumis-coconudge/clean-workspace-action@v1
 
