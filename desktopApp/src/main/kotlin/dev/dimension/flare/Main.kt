@@ -19,7 +19,6 @@ import coil3.compose.setSingletonImageLoaderFactory
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.request.crossfade
 import dev.dimension.flare.common.DeeplinkHandler
-import dev.dimension.flare.common.SandboxHelper
 import dev.dimension.flare.data.network.ktorClient
 import dev.dimension.flare.di.KoinHelper
 import dev.dimension.flare.di.composeUiModule
@@ -67,7 +66,6 @@ fun main(args: Array<String>) {
     if (!isFirstInstance) {
         return
     }
-    SandboxHelper.configureSandboxArgs()
     startKoin {
         modules(
             desktopModule + KoinHelper.modules() + composeUiModule,
