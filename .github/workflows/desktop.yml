@@ -76,7 +76,7 @@ jobs:
         env:
           BUILD_NUMBER: ${{github.run_number}}
           BUILD_VERSION: ${{github.ref_name}}
-        run: ./gradlew :desktop:packageReleasePkg --stacktrace
+        run: ./gradlew :desktop:packageReleasePkg --stacktrace --info
       - name: Archive macOS artifacts Product
         # if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v6
