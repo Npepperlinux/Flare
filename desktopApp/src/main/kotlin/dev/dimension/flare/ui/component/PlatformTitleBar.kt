@@ -26,7 +26,7 @@ internal fun FrameWindowScope.PlatformTitleBar(
     modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit = {},
 ) {
-    if (SystemUtils.IS_OS_WINDOWS && this is DecoratedWindowScope) {
+    if (this is DecoratedWindowScope) {
         TitleBar(
             style =
                 LocalTitleBarStyle.current.copy(

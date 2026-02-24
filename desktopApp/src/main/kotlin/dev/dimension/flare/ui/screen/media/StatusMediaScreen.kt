@@ -26,7 +26,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -100,10 +99,6 @@ import io.github.composefluent.surface.Card
 import io.github.kdroidfilter.composemediaplayer.VideoPlayerState
 import io.github.kdroidfilter.composemediaplayer.VideoPlayerSurface
 import io.github.kdroidfilter.composemediaplayer.rememberVideoPlayerState
-import java.awt.FileDialog
-import kotlin.math.roundToLong
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 import me.saket.telephoto.ExperimentalTelephotoApi
@@ -117,6 +112,11 @@ import me.saket.telephoto.zoomable.zoomable
 import moe.tlaster.precompose.molecule.producePresenter
 import org.apache.commons.lang3.SystemUtils
 import org.jetbrains.compose.resources.stringResource
+import java.awt.FileDialog
+import kotlin.math.roundToLong
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.nanoseconds
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 internal fun StatusMediaScreen(
@@ -331,15 +331,9 @@ internal fun VideoItem(
     modifier: Modifier = Modifier,
 ) {
     val playerState = rememberVideoPlayerState()
-    DisposableEffect(Unit) {
+    LaunchedEffect(Unit) {
         playerState.loop = true
         playerState.openUri(url)
-        onDispose {
-            runCatching {
-                playerState.stop()
-                playerState.dispose()
-            }
-        }
     }
     var showControls by remember { mutableStateOf(true) }
     Box(
@@ -447,9 +441,11 @@ private fun PlayerControl(
                             (it.value / 1000f * duration)
                                 .roundToLong()
                                 .let {
+                                    // https://github.com/kdroidFilter/ComposeMediaPlayer/issues/153
                                     if (SystemUtils.IS_OS_MAC_OSX) {
-                                        // https://github.com/kdroidFilter/ComposeMediaPlayer/issues/153
                                         it.seconds
+                                    } else if (SystemUtils.IS_OS_LINUX) {
+                                        it.nanoseconds
                                     } else {
                                         it.milliseconds
                                     }
