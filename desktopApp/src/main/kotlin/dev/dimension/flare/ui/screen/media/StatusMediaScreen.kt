@@ -1,10 +1,13 @@
 package dev.dimension.flare.ui.screen.media
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,36 +19,54 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.isUnspecified
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.times
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.roundToIntSize
+import androidx.compose.ui.unit.toOffset
 import androidx.compose.ui.window.WindowPlacement
+import coil3.compose.AsyncImagePainter
 import coil3.compose.LocalPlatformContext
-import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.size.Size
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
 import compose.icons.fontawesomeicons.solid.FloppyDisk
+import compose.icons.fontawesomeicons.solid.Pause
+import compose.icons.fontawesomeicons.solid.Play
 import compose.icons.fontawesomeicons.solid.UpRightAndDownLeftFromCenter
 import dev.dimension.flare.LocalWindowPadding
 import dev.dimension.flare.Res
+import dev.dimension.flare.common.FlareHardwareShortcutDetector
 import dev.dimension.flare.media_fullscreen
 import dev.dimension.flare.media_save
 import dev.dimension.flare.model.AccountType
@@ -55,6 +76,7 @@ import dev.dimension.flare.ui.component.FAIcon
 import dev.dimension.flare.ui.component.LocalComponentAppearance
 import dev.dimension.flare.ui.component.NetworkImage
 import dev.dimension.flare.ui.component.status.MediaItem
+import dev.dimension.flare.ui.humanizer.humanize
 import dev.dimension.flare.ui.model.UiMedia
 import dev.dimension.flare.ui.model.UiTimeline
 import dev.dimension.flare.ui.model.getFileName
@@ -65,23 +87,36 @@ import dev.dimension.flare.ui.presenter.invoke
 import dev.dimension.flare.ui.presenter.status.StatusPresenter
 import dev.dimension.flare.ui.presenter.status.StatusState
 import dev.dimension.flare.ui.theme.LocalComposeWindow
+import dev.dimension.flare.ui.theme.screenHorizontalPadding
 import io.github.composefluent.FluentTheme
 import io.github.composefluent.component.GridViewItem
 import io.github.composefluent.component.HorizontalFlipView
+import io.github.composefluent.component.ProgressBar
+import io.github.composefluent.component.ProgressRing
+import io.github.composefluent.component.Slider
 import io.github.composefluent.component.SubtleButton
+import io.github.composefluent.component.Text
+import io.github.composefluent.surface.Card
+import io.github.kdroidfilter.composemediaplayer.VideoPlayerState
 import io.github.kdroidfilter.composemediaplayer.VideoPlayerSurface
 import io.github.kdroidfilter.composemediaplayer.rememberVideoPlayerState
+import java.awt.FileDialog
+import kotlin.math.roundToLong
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 import me.saket.telephoto.ExperimentalTelephotoApi
-import me.saket.telephoto.zoomable.Viewport
+import me.saket.telephoto.zoomable.HardwareShortcutsSpec
 import me.saket.telephoto.zoomable.ZoomSpec
+import me.saket.telephoto.zoomable.ZoomableContentLocation
+import me.saket.telephoto.zoomable.ZoomableContentLocation.SameAsLayoutBounds
+import me.saket.telephoto.zoomable.ZoomableContentLocation.Unspecified
 import me.saket.telephoto.zoomable.rememberZoomableState
-import me.saket.telephoto.zoomable.spatial.CoordinateSpace
 import me.saket.telephoto.zoomable.zoomable
 import moe.tlaster.precompose.molecule.producePresenter
+import org.apache.commons.lang3.SystemUtils
 import org.jetbrains.compose.resources.stringResource
-import java.awt.FileDialog
 
 @Composable
 internal fun StatusMediaScreen(
@@ -135,16 +170,10 @@ internal fun StatusMediaScreen(
 
                     is UiMedia.Video -> {
                         if (pagerState.currentPage == it) {
-                            val playerState = rememberVideoPlayerState()
-                            DisposableEffect(Unit) {
-                                playerState.openUri(media.url)
-                                onDispose {
-                                    playerState.stop()
-                                    playerState.dispose()
-                                }
-                            }
-                            VideoPlayerSurface(
-                                playerState = playerState,
+                            VideoItem(
+                                url = media.url,
+                                thumbnailUrl = media.thumbnailUrl,
+                                description = media.description,
                                 modifier =
                                     Modifier
                                         .fillMaxSize()
@@ -294,6 +323,156 @@ internal fun StatusMediaScreen(
     }
 }
 
+@Composable
+internal fun VideoItem(
+    url: String,
+    thumbnailUrl: String,
+    description: String?,
+    modifier: Modifier = Modifier,
+) {
+    val playerState = rememberVideoPlayerState()
+    DisposableEffect(Unit) {
+        playerState.loop = true
+        playerState.openUri(url)
+        onDispose {
+            runCatching {
+                playerState.stop()
+                playerState.dispose()
+            }
+        }
+    }
+    var showControls by remember { mutableStateOf(true) }
+    Box(
+        modifier = modifier,
+    ) {
+        AnimatedContent(
+            playerState.isLoading && playerState.sliderPos == 0f,
+            transitionSpec = {
+                fadeIn() togetherWith fadeOut()
+            },
+            modifier =
+                Modifier.clickable {
+                    showControls = !showControls
+                },
+        ) { isLoading ->
+            if (!isLoading) {
+                VideoPlayerSurface(
+                    playerState = playerState,
+                )
+            } else {
+                NetworkImage(
+                    model = thumbnailUrl,
+                    contentDescription = description,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit,
+                )
+            }
+        }
+        AnimatedVisibility(
+            showControls,
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp)
+                    .widthIn(max = 480.dp),
+            enter = slideInVertically { it } + fadeIn(),
+            exit = slideOutVertically { it } + fadeOut(),
+        ) {
+            Card(
+                modifier = Modifier,
+            ) {
+                PlayerControl(
+                    state = playerState,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlayerControl(
+    state: VideoPlayerState,
+    modifier: Modifier = Modifier,
+) {
+    val playerState by rememberUpdatedState(state)
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (playerState.isLoading) {
+            ProgressBar(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+            )
+        } else {
+            SubtleButton(
+                onClick = {
+                    if (playerState.isPlaying) {
+                        playerState.pause()
+                    } else {
+                        playerState.play()
+                    }
+                },
+                disabled = playerState.isLoading,
+            ) {
+                FAIcon(
+                    if (!playerState.isPlaying) {
+                        FontAwesomeIcons.Solid.Play
+                    } else {
+                        FontAwesomeIcons.Solid.Pause
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+            Slider(
+                value = playerState.sliderPos,
+                onValueChange = {
+                    playerState.sliderPos = it
+                    playerState.userDragging = true
+                },
+                onValueChangeFinished = {
+                    playerState.userDragging = false
+                    playerState.seekTo(playerState.sliderPos)
+                },
+                valueRange = 0f..1000f,
+                modifier = Modifier.weight(1f),
+                tooltipContent = {
+                    val duration = state.metadata.duration
+                    if (duration != null) {
+                        Text(
+                            (it.value / 1000f * duration)
+                                .roundToLong()
+                                .let {
+                                    if (SystemUtils.IS_OS_MAC_OSX) {
+                                        // https://github.com/kdroidFilter/ComposeMediaPlayer/issues/153
+                                        it.seconds
+                                    } else {
+                                        it.milliseconds
+                                    }
+                                }.humanize(),
+                        )
+                    }
+                },
+            )
+            val currentTime by remember {
+                derivedStateOf {
+                    buildString {
+                        append(playerState.positionText)
+                        append(" / ")
+                        append(playerState.durationText)
+                    }
+                }
+            }
+            Text(currentTime)
+            Spacer(Modifier.width(screenHorizontalPadding))
+        }
+    }
+}
+
 @OptIn(ExperimentalTelephotoApi::class)
 @Composable
 internal fun ImageItem(
@@ -305,6 +484,16 @@ internal fun ImageItem(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
 ) {
+    val painter =
+        rememberAsyncImagePainter(
+            ImageRequest
+                .Builder(LocalPlatformContext.current)
+                .data(url)
+                .placeholderMemoryCacheKey(previewUrl)
+                .crossfade(1_000)
+                .size(Size.ORIGINAL)
+                .build(),
+        )
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(isFocused) {
         if (isFocused) {
@@ -314,63 +503,61 @@ internal fun ImageItem(
         }
     }
     val zoomableState =
-        rememberZoomableState(zoomSpec = ZoomSpec(maxZoomFactor = 10f))
+        rememberZoomableState(
+            zoomSpec = ZoomSpec(maxZoomFactor = 50f, minZoomFactor = 0.1f),
+            hardwareShortcutsSpec =
+                HardwareShortcutsSpec(
+                    shortcutDetector = FlareHardwareShortcutDetector,
+                ),
+        ).apply {
+            LaunchedEffect(painter.intrinsicSize) {
+                setContentLocation(
+                    scaledInsideAndCenterAligned(painter.intrinsicSize),
+                )
+            }
+        }
     LaunchedEffect(zoomableState.zoomFraction) {
         zoomableState.zoomFraction?.let {
             setLockPager(it > 0.01f)
         } ?: setLockPager(false)
     }
-    val aspectRatio =
-        remember(zoomableState.coordinateSystem.unscaledContentBounds) {
-            with(zoomableState.coordinateSystem) {
-                unscaledContentBounds.rectIn(CoordinateSpace.Viewport)
-            }.let {
-                it.height / it.width
-            }
+    LaunchedEffect(painter.intrinsicSize) {
+        val aspectRatio = painter.intrinsicSize.height / painter.intrinsicSize.width
+        val targetAspectRatio = 19.5f / 9f
+        if (aspectRatio > targetAspectRatio) {
+            zoomableState.contentAlignment = Alignment.TopCenter
+            zoomableState.contentScale = ContentScale.FillWidth
+        } else {
+            zoomableState.contentAlignment = Alignment.Center
+            zoomableState.contentScale = ContentScale.Fit
         }
+    }
 
-    val alignment =
-        remember(aspectRatio) {
-            val targetAspectRatio = 19.5 / 9
-            if (aspectRatio > targetAspectRatio) {
-                Alignment.TopCenter
-            } else {
-                Alignment.Center
-            }
+    val state by painter.state.collectAsState()
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(
+            painter,
+            contentDescription = description,
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .focusRequester(focusRequester)
+                    .zoomable(
+                        state = zoomableState,
+                        onClick = {
+                            onClick?.invoke()
+                        },
+                    ),
+            contentScale = ContentScale.Fit,
+            alignment = Alignment.Center,
+        )
+        if (state is AsyncImagePainter.State.Loading) {
+            ProgressRing()
         }
-
-    val contentScale =
-        remember(aspectRatio) {
-            val targetAspectRatio = 19.5 / 9
-            if (aspectRatio > targetAspectRatio) {
-                ContentScale.FillWidth
-            } else {
-                ContentScale.Fit
-            }
-        }
-
-    SubcomposeAsyncImage(
-        model =
-            ImageRequest
-                .Builder(LocalPlatformContext.current)
-                .data(url)
-                .placeholderMemoryCacheKey(previewUrl)
-                .crossfade(1_000)
-                .size(Size.ORIGINAL)
-                .build(),
-        contentDescription = description,
-        modifier =
-            modifier
-                .focusRequester(focusRequester)
-                .zoomable(
-                    state = zoomableState,
-                    onClick = {
-                        onClick?.invoke()
-                    },
-                ),
-        contentScale = contentScale,
-        alignment = alignment,
-    )
+    }
 }
 
 @Composable
@@ -380,7 +567,7 @@ private fun presenter(
     window: ComposeWindow?,
 ) = run {
     var lockPager by remember { mutableStateOf(false) }
-    var showThumbnailList by remember { mutableStateOf(true) }
+    val showThumbnailList by remember { mutableStateOf(false) }
     val state =
         remember(
             "StatusMediaScreen_${accountType}_$statusKey",
@@ -396,7 +583,7 @@ private fun presenter(
     medias.onSuccess {
         LaunchedEffect(it.size) {
             if (it.size > 1) {
-                showThumbnailList = true
+//                showThumbnailList = true
             }
         }
     }
@@ -411,7 +598,7 @@ private fun presenter(
         }
 
         fun setShowThumbnailList(value: Boolean) {
-            showThumbnailList = value
+//            showThumbnailList = value
         }
 
         fun save(item: UiMedia) {
@@ -439,5 +626,61 @@ private fun presenter(
                 }
             }
         }
+    }
+}
+
+@Stable
+private fun scaledInsideAndCenterAligned(size: androidx.compose.ui.geometry.Size?): ZoomableContentLocation =
+    when {
+        size == null -> Unspecified
+        size.isUnspecified -> SameAsLayoutBounds
+        else -> {
+            RelativeContentLocation(
+                size = size,
+                scale = ContentScale.Fit,
+                alignment = Alignment.Center,
+            )
+        }
+    }
+
+@Immutable
+private data class RelativeContentLocation(
+    private val size: androidx.compose.ui.geometry.Size,
+    private val scale: ContentScale,
+    private val alignment: Alignment,
+) : ZoomableContentLocation {
+    @Deprecated("No longer used")
+    override fun size(layoutSize: androidx.compose.ui.geometry.Size): androidx.compose.ui.geometry.Size {
+        val scaleFactor =
+            if (size.isEmpty()) {
+                androidx.compose.ui.layout
+                    .ScaleFactor(0f, 0f)
+            } else {
+                scale.computeScaleFactor(
+                    srcSize = size,
+                    dstSize = layoutSize,
+                )
+            }
+        return size * scaleFactor
+    }
+
+    override fun location(
+        layoutSize: androidx.compose.ui.geometry.Size,
+        direction: LayoutDirection,
+    ): Rect {
+        check(!layoutSize.isEmpty()) { "Layout size is empty" }
+
+        @Suppress("DEPRECATION")
+        val scaledSize = size(layoutSize)
+        val alignedOffset =
+            alignment.align(
+                size = scaledSize.roundToIntSize(),
+                space = layoutSize.roundToIntSize(),
+                layoutDirection = direction,
+            )
+        return Rect(
+            offset = alignedOffset.toOffset(),
+            size = scaledSize,
+        )
     }
 }

@@ -46,20 +46,6 @@ internal fun ServiceSelectScreen(
                     }
                 },
             )
-//            webviewBridge.openAndWaitCookies(
-//                "https://${UiApplication.XQT.host}",
-//                callback = { cookies ->
-//                    if (cookies.isNullOrEmpty()) {
-//                        false
-//                    } else {
-//                        xqtLoginState.checkChocolate(cookies).also {
-//                            if (it) {
-//                                xqtLoginState.login(cookies)
-//                            }
-//                        }
-//                    }
-//                },
-//            )
         },
         onVVO = {
             onWebViewLogin.invoke(
@@ -76,20 +62,6 @@ internal fun ServiceSelectScreen(
                     }
                 },
             )
-//            webviewBridge.openAndWaitCookies(
-//                UiApplication.VVo.loginUrl,
-//                callback = { cookies ->
-//                    if (cookies.isNullOrEmpty()) {
-//                        false
-//                    } else {
-//                        vvoLoginState.checkChocolate(cookies).also {
-//                            if (it) {
-//                                vvoLoginState.login(cookies)
-//                            }
-//                        }
-//                    }
-//                },
-//            )
         },
         openUri = uriHandler::openUri,
         registerDeeplinkCallback = { callback ->
