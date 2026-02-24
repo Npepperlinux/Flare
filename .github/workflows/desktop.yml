@@ -110,12 +110,55 @@ jobs:
           BUILD_NUMBER: ${{github.run_number}}
           BUILD_VERSION: ${{github.ref_name}}
         run: ./gradlew :desktop:packageReleaseAppx --stacktrace
+      - name: Create .appxbundle next to .appx
+        shell: pwsh
+        run: |
+          $appxFiles = Get-ChildItem -Path "desktopApp/build/compose/binaries/main-release/appx/*.appx" -File
+
+          if ($appxFiles.Count -eq 0) {
+            throw "No .appx file found in desktopApp/build/compose/binaries/main-release/appx/"
+          }
+
+          if ($appxFiles.Count -gt 1) {
+            throw "Expected exactly one .appx file, but found $($appxFiles.Count)."
+          }
+
+          $appx = $appxFiles[0]
+          $appxDir = $appx.DirectoryName
+          $baseName = [System.IO.Path]::GetFileNameWithoutExtension($appx.Name)
+          $bundlePath = Join-Path $appxDir ($baseName + ".appxbundle")
+
+          Write-Host "APPX: $($appx.FullName)"
+          Write-Host "APPXBUNDLE output: $bundlePath"
+
+          $makeappx = Get-ChildItem `
+            "$env:ProgramFiles(x86)\Windows Kits\10\bin\*\x64\MakeAppx.exe" `
+            -ErrorAction Stop |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1 -ExpandProperty FullName
+
+          Write-Host "Using MakeAppx: $makeappx"
+
+          $tempBundleInput = Join-Path $env:RUNNER_TEMP "appx-bundle-input"
+          if (Test-Path $tempBundleInput) {
+            Remove-Item $tempBundleInput -Recurse -Force
+          }
+          New-Item -ItemType Directory -Path $tempBundleInput | Out-Null
+          Copy-Item $appx.FullName -Destination $tempBundleInput -Force
+
+          & $makeappx bundle /d $tempBundleInput /p $bundlePath /o
+
+          if (!(Test-Path $bundlePath)) {
+            throw "Failed to create appxbundle: $bundlePath"
+          }
+
+          Write-Host "Created: $bundlePath"
       - name: Upload MSIX package
         # if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v6
         with:
           name: Windows-package
-          path: desktopApp/build/compose/binaries/main-release/appx/*.appx
+          path: desktopApp/build/compose/binaries/main-release/appx/*.appxbundle
 
   build-linux:
     runs-on: [ubuntu-latest]
@@ -168,7 +211,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            **/*.msixbundle
+            **/*.appxbundle
             **/*.pkg
             **/*.AppImage
             **/*.appimage
