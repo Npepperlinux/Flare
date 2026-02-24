@@ -58,6 +58,7 @@ import dev.dimension.flare.data.model.AvatarShape
 import dev.dimension.flare.data.model.LocalAppearanceSettings
 import dev.dimension.flare.data.model.PostActionStyle
 import dev.dimension.flare.data.model.Theme
+import dev.dimension.flare.data.model.VideoAutoplay
 import dev.dimension.flare.data.repository.SettingsRepository
 import dev.dimension.flare.delete
 import dev.dimension.flare.edit
@@ -124,6 +125,8 @@ import dev.dimension.flare.settings_appearance_theme_dark
 import dev.dimension.flare.settings_appearance_theme_description
 import dev.dimension.flare.settings_appearance_theme_light
 import dev.dimension.flare.settings_appearance_title
+import dev.dimension.flare.settings_appearance_video_autoplay
+import dev.dimension.flare.settings_appearance_video_autoplay_description
 import dev.dimension.flare.settings_language_description
 import dev.dimension.flare.settings_language_title
 import dev.dimension.flare.settings_local_history_description
@@ -804,6 +807,25 @@ internal fun SettingsScreen(
                         ExpanderItemSeparator()
                     }
                 }
+                ExpanderItem(
+                    heading = {
+                        Text(stringResource(Res.string.settings_appearance_video_autoplay))
+                    },
+                    caption = {
+                        Text(stringResource(Res.string.settings_appearance_video_autoplay_description))
+                    },
+                    trailing = {
+                        Switcher(
+                            checked = LocalAppearanceSettings.current.videoAutoplay == VideoAutoplay.ALWAYS,
+                            {
+                                state.appearanceState.updateSettings {
+                                    copy(videoAutoplay = if (it) VideoAutoplay.ALWAYS else VideoAutoplay.NEVER)
+                                }
+                            },
+                            textBefore = true,
+                        )
+                    },
+                )
             }
 
             Header(stringResource(Res.string.settings_storage_title))

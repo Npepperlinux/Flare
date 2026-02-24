@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -331,9 +332,12 @@ internal fun VideoItem(
     modifier: Modifier = Modifier,
 ) {
     val playerState = rememberVideoPlayerState()
-    LaunchedEffect(Unit) {
+    DisposableEffect(Unit) {
         playerState.loop = true
         playerState.openUri(url)
+        onDispose {
+            playerState.stop()
+        }
     }
     var showControls by remember { mutableStateOf(true) }
     Box(
@@ -422,38 +426,42 @@ private fun PlayerControl(
                     modifier = Modifier.size(16.dp),
                 )
             }
-            Slider(
-                value = playerState.sliderPos,
-                onValueChange = {
-                    playerState.sliderPos = it
-                    playerState.userDragging = true
-                },
-                onValueChangeFinished = {
-                    playerState.userDragging = false
-                    playerState.seekTo(playerState.sliderPos)
-                },
-                valueRange = 0f..1000f,
-                modifier = Modifier.weight(1f),
-                tooltipContent = {
-                    val duration = state.metadata.duration
-                    if (duration != null) {
-                        Text(
-                            (it.value / 1000f * duration)
-                                .roundToLong()
-                                .let {
-                                    // https://github.com/kdroidFilter/ComposeMediaPlayer/issues/153
-                                    if (SystemUtils.IS_OS_MAC_OSX) {
-                                        it.seconds
-                                    } else if (SystemUtils.IS_OS_LINUX) {
-                                        it.nanoseconds
-                                    } else {
-                                        it.milliseconds
-                                    }
-                                }.humanize(),
-                        )
-                    }
-                },
-            )
+            if (!playerState.sliderPos.isNaN()) {
+                Slider(
+                    value = playerState.sliderPos,
+                    onValueChange = {
+                        playerState.sliderPos = it
+                        playerState.userDragging = true
+                    },
+                    onValueChangeFinished = {
+                        playerState.userDragging = false
+                        playerState.seekTo(playerState.sliderPos)
+                    },
+                    valueRange = 0f..1000f,
+                    modifier = Modifier.weight(1f),
+                    tooltipContent = {
+                        val duration = state.metadata.duration
+                        if (duration != null) {
+                            Text(
+                                (it.value / 1000f * duration)
+                                    .roundToLong()
+                                    .let {
+                                        // https://github.com/kdroidFilter/ComposeMediaPlayer/issues/153
+                                        if (SystemUtils.IS_OS_MAC_OSX) {
+                                            it.seconds
+                                        } else if (SystemUtils.IS_OS_LINUX) {
+                                            it.nanoseconds
+                                        } else {
+                                            it.milliseconds
+                                        }
+                                    }.humanize(),
+                            )
+                        }
+                    },
+                )
+            } else {
+                Spacer(Modifier.weight(1f))
+            }
             val currentTime by remember {
                 derivedStateOf {
                     buildString {
