@@ -131,8 +131,15 @@ jobs:
           Write-Host "APPX: $($appx.FullName)"
           Write-Host "APPXBUNDLE output: $bundlePath"
 
+          $kitsRoot = "${env:ProgramFiles(x86)}\Windows Kits\10\bin"
+          Write-Host "Windows Kits root: $kitsRoot"
+
+          if (!(Test-Path $kitsRoot)) {
+            throw "Windows SDK path not found: $kitsRoot"
+          }
+
           $makeappx = Get-ChildItem `
-            "$env:ProgramFiles(x86)\Windows Kits\10\bin\*\x64\MakeAppx.exe" `
+            "$kitsRoot\*\x64\MakeAppx.exe" `
             -ErrorAction Stop |
             Sort-Object FullName -Descending |
             Select-Object -First 1 -ExpandProperty FullName
