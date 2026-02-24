@@ -40,20 +40,20 @@ jobs:
           xcode-version: latest-stable
       - name: import certs
         id: import-cert
-        # if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/')
         uses: apple-actions/import-codesign-certs@v6
         with:
           p12-file-base64: ${{ secrets.MACOS_CERT_BASE64 }}
           p12-password: ${{ secrets.MACOS_CERT_PASSWORD }}
       - name: Create Embedded Provision Profile
-        # if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           echo "$MACOS_EMBEDDED_PROVISION" > desktopApp/embedded.provisionprofile.b64
           base64 -d -i desktopApp/embedded.provisionprofile.b64 > desktopApp/embedded.provisionprofile    
         env:
           MACOS_EMBEDDED_PROVISION: ${{ secrets.MACOS_EMBEDDED_PROVISION }}
       - name: Create Runtime Provision Profile
-        # if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           echo "$MACOS_RUNTIME_PROVISION" > desktopApp/runtime.provisionprofile.b64
           base64 -d -i desktopApp/runtime.provisionprofile.b64 > desktopApp/runtime.provisionprofile    
@@ -68,13 +68,12 @@ jobs:
           BUILD_VERSION: ${{github.ref_name}}
         run: ./gradlew :desktop:check :desktop:build --stacktrace
       - name: Package with Gradle
-        # if: startsWith(github.ref, 'refs/tags/')
         env:
           BUILD_NUMBER: ${{github.run_number}}
           BUILD_VERSION: ${{github.ref_name}}
         run: ./gradlew :desktop:packageReleasePkg --stacktrace
       - name: Archive macOS artifacts Product
-        # if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v6
         with:
           name: macOS-package
@@ -105,63 +104,75 @@ jobs:
           BUILD_VERSION: ${{github.ref_name}}
         run: ./gradlew :desktop:check :desktop:build --stacktrace
       - name: Package with Gradle
-        # if: startsWith(github.ref, 'refs/tags/')
         env:
           BUILD_NUMBER: ${{github.run_number}}
           BUILD_VERSION: ${{github.ref_name}}
         run: ./gradlew :desktop:packageReleaseAppx --stacktrace
-      - name: Create .appxbundle next to .appx
+      - name: Build appxbundle with same version as appx
         shell: pwsh
         run: |
-          $appxFiles = Get-ChildItem -Path "desktopApp/build/compose/binaries/main-release/appx/*.appx" -File
+          $ErrorActionPreference = "Stop"
 
-          if ($appxFiles.Count -eq 0) {
-            throw "No .appx file found in desktopApp/build/compose/binaries/main-release/appx/"
+          $appx = Get-ChildItem "desktopApp/build/compose/binaries/main-release/appx/*.appx" | Select-Object -First 1
+          if (-not $appx) {
+            throw "No .appx file found"
           }
 
-          if ($appxFiles.Count -gt 1) {
-            throw "Expected exactly one .appx file, but found $($appxFiles.Count)."
+          $bundlePath = [System.IO.Path]::ChangeExtension($appx.FullName, ".appxbundle")
+          $tempDir = Join-Path $env:RUNNER_TEMP "appx-bundle-work"
+          New-Item -ItemType Directory -Force -Path $tempDir | Out-Null
+
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zip = [System.IO.Compression.ZipFile]::OpenRead($appx.FullName)
+          try {
+            $manifestEntry = $zip.Entries | Where-Object { $_.FullName -ieq "AppxManifest.xml" } | Select-Object -First 1
+            if (-not $manifestEntry) {
+              throw "AppxManifest.xml not found in $($appx.Name)"
+            }
+
+            $reader = New-Object System.IO.StreamReader($manifestEntry.Open())
+            try {
+              [xml]$xml = $reader.ReadToEnd()
+            } finally {
+              $reader.Dispose()
+            }
+          } finally {
+            $zip.Dispose()
           }
 
-          $appx = $appxFiles[0]
-          $appxDir = $appx.DirectoryName
-          $baseName = [System.IO.Path]::GetFileNameWithoutExtension($appx.Name)
-          $bundlePath = Join-Path $appxDir ($baseName + ".appxbundle")
+          $ns = New-Object System.Xml.XmlNamespaceManager($xml.NameTable)
+          $ns.AddNamespace("appx", $xml.DocumentElement.NamespaceURI)
+          $versionNode = $xml.SelectSingleNode("/appx:Package/appx:Identity/@Version", $ns)
+          if (-not $versionNode) {
+            throw "Cannot read Identity Version from AppxManifest.xml"
+          }
+          $appxVersion = $versionNode.Value
 
-          Write-Host "APPX: $($appx.FullName)"
-          Write-Host "APPXBUNDLE output: $bundlePath"
+          Write-Host "APPX:    $($appx.FullName)"
+          Write-Host "Version: $appxVersion"
+          Write-Host "Bundle:  $bundlePath"
 
-          $kitsRoot = "${env:ProgramFiles(x86)}\Windows Kits\10\bin"
-          Write-Host "Windows Kits root: $kitsRoot"
+          $mapping = Join-Path $tempDir "bundle.map.txt"
+          @"
+          [Files]
+          "$($appx.FullName)" "$($appx.Name)"
+          "@ | Set-Content -Path $mapping -Encoding ASCII
 
-          if (!(Test-Path $kitsRoot)) {
-            throw "Windows SDK path not found: $kitsRoot"
+          $makeAppx = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\makeappx.exe" -ErrorAction SilentlyContinue |
+            Sort-Object FullName -Descending | Select-Object -First 1
+          if (-not $makeAppx) {
+            $alt = "C:\Program Files (x86)\Windows Kits\10\App Certification Kit\makeappx.exe"
+            if (Test-Path $alt) {
+              $makeAppx = Get-Item $alt
+            }
+          }
+          if (-not $makeAppx) {
+            throw "makeappx.exe not found. Please install Windows SDK on the runner."
           }
 
-          $makeappx = Get-ChildItem `
-            "$kitsRoot\*\x64\MakeAppx.exe" `
-            -ErrorAction Stop |
-            Sort-Object FullName -Descending |
-            Select-Object -First 1 -ExpandProperty FullName
-
-          Write-Host "Using MakeAppx: $makeappx"
-
-          $tempBundleInput = Join-Path $env:RUNNER_TEMP "appx-bundle-input"
-          if (Test-Path $tempBundleInput) {
-            Remove-Item $tempBundleInput -Recurse -Force
-          }
-          New-Item -ItemType Directory -Path $tempBundleInput | Out-Null
-          Copy-Item $appx.FullName -Destination $tempBundleInput -Force
-
-          & $makeappx bundle /d $tempBundleInput /p $bundlePath /o
-
-          if (!(Test-Path $bundlePath)) {
-            throw "Failed to create appxbundle: $bundlePath"
-          }
-
-          Write-Host "Created: $bundlePath"
-      - name: Upload MSIX package
-        # if: startsWith(github.ref, 'refs/tags/')
+          & $makeAppx.FullName bundle /o /bv $appxVersion /f $mapping /p $bundlePath
+      - name: Upload AppxBundle package
+        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v6
         with:
           name: Windows-package
@@ -192,13 +203,12 @@ jobs:
           BUILD_VERSION: ${{github.ref_name}}
         run: ./gradlew :desktop:check :desktop:build --stacktrace
       - name: Package with Gradle
-        # if: startsWith(github.ref, 'refs/tags/')
         env:
           BUILD_NUMBER: ${{github.run_number}}
           BUILD_VERSION: ${{github.ref_name}}
         run: ./gradlew :desktop:packageReleaseAppImage --stacktrace
       - name: Upload AppImage package
-        # if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v6
         with:
           name: Linux-package

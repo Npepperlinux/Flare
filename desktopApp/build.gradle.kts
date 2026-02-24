@@ -1,6 +1,7 @@
 
 import io.github.kdroidfilter.nucleus.desktop.application.dsl.AppImageCategory
 import io.github.kdroidfilter.nucleus.desktop.application.dsl.CompressionLevel
+import java.util.Properties
 import org.jetbrains.compose.compose
 
 plugins {
@@ -71,17 +72,21 @@ nucleus.application {
         cleanupNativeLibs = true
         enableAotCache = true
         homepage = "https://github.com/DimensionDev/Flare"
-        compressionLevel = CompressionLevel.Maximum
+        // Higher compression level can cause laggy for linux AppImage
+        compressionLevel = CompressionLevel.Store
         targetFormats(
             io.github.kdroidfilter.nucleus.desktop.application.dsl.TargetFormat.Pkg,
             io.github.kdroidfilter.nucleus.desktop.application.dsl.TargetFormat.AppImage,
             io.github.kdroidfilter.nucleus.desktop.application.dsl.TargetFormat.AppX,
         )
         packageName = "Flare"
+        val fdroidProp = Properties()
+        val fdroid = rootProject.file("fdroid.properties")
+        fdroidProp.load(fdroid.inputStream())
         val buildVersion = System.getenv("BUILD_VERSION")?.takeIf {
             // match semantic versioning
             Regex("""\d+\.\d+\.\d+(-\S+)?""").matches(it)
-        } ?: "1.2.2"
+        } ?: fdroidProp.getProperty("versionName") ?: "1.0.0"
         packageVersion = buildVersion
         artifactName = $$"Flare-$${buildVersion}.${ext}"
 
@@ -89,7 +94,8 @@ nucleus.application {
 
         macOS {
             val hasSigningProps = project.file("embedded.provisionprofile").exists() && project.file("runtime.provisionprofile").exists()
-            packageBuildVersion = System.getenv("BUILD_NUMBER") ?: "1"
+            packageBuildVersion = System.getenv("BUILD_NUMBER") ?: fdroidProp.getProperty("versionCode")
+                ?.toIntOrNull()?.toString() ?: "1"
             bundleID = "dev.dimension.flare"
             minimumSystemVersion = "14.0"
             appStore = hasSigningProps
@@ -100,7 +106,12 @@ nucleus.application {
             )
 
             infoPlist {
-                extraKeysRawXml = macExtraPlistKeys
+                extraKeysRawXml = """
+      <key>ITSAppUsesNonExemptEncryption</key>
+      <false/>
+      <key>LSMultipleInstancesProhibited</key>
+      <true/>
+    """
             }
 
             if (hasSigningProps) {
@@ -116,7 +127,7 @@ nucleus.application {
             }
 
             iconFile.set(project.file("resources/ic_launcher.icns"))
-            layeredIconDir.set(File(project.rootDir, "iosApp/flare/AppIcon.icon"))
+            layeredIconDir.set(rootProject.file("iosApp/flare/AppIcon.icon"))
         }
         windows {
             iconFile.set(project.file("resources/ic_launcher.ico"))
@@ -136,7 +147,7 @@ nucleus.application {
                     ?.sorted()
                     ?.map { it.replace("-r", "-") }
                     ?: emptyList()
-                languages = listOf("en-US") + locales
+                languages = listOf("en-US") + locales - "sr-SP" // Windows doesn't support sr-SP
                 backgroundColor = "#09AD9F"
                 showNameOnTiles = true
                 minVersion = "10.0.17763.0"
@@ -170,26 +181,6 @@ ktlint {
         exclude { element -> element.file.path.contains("build", ignoreCase = true) }
     }
 }
-
-// register deeplinks
-val macExtraPlistKeys: String
-    get() = """
-      <key>ITSAppUsesNonExemptEncryption</key>
-      <false/>
-      <key>LSMultipleInstancesProhibited</key>
-      <true/>
-    """
-
-
-extra["sqliteVersion"] = libs.versions.sqlite.get()
-extra["sqliteOsArch"] = "osx_arm64"
-extra["jnaVersion"] = libs.versions.jna.get()
-extra["nativeDestDir"] = "resources/macos-arm64"
-
-//apply(from = File(projectDir, "install-native-libs.gradle.kts"))
-//apply(from = File(projectDir, "build-swift.gradle.kts"))
-
-
 
 abstract class GenerateSupportedLocales : DefaultTask() {
 
