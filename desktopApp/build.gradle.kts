@@ -69,7 +69,8 @@ nucleus.application {
     }
     nativeDistributions {
         cleanupNativeLibs = true
-        enableAotCache = true
+        // disable aot in linux
+        enableAotCache = !System.getProperty("os.name").lowercase().contains("linux")
         homepage = "https://github.com/DimensionDev/Flare"
         compressionLevel = CompressionLevel.Maximum
         targetFormats(
