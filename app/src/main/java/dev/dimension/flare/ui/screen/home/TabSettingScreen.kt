@@ -258,7 +258,7 @@ private fun presenter(
         }
     currentTabs
         .onSuccess {
-            LaunchedEffect(it.size) {
+            LaunchedEffect(it) {
                 cacheTabs.clear()
                 cacheTabs.addAll(it)
             }
