@@ -1,6 +1,7 @@
 import com.android.build.api.dsl.LibraryExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 plugins {
@@ -18,6 +19,7 @@ plugins {
     alias(libs.plugins.room) apply false
     alias(libs.plugins.composeMultiplatform) apply false
     alias(libs.plugins.stability.analyzer) apply false
+    alias(libs.plugins.nucleus) apply false
 }
 
 subprojects {
@@ -38,7 +40,10 @@ subprojects {
                 freeCompilerArgs.addAll(freeArgs)
                 optIn.addAll(commonOptIn)
             }
-            jvmToolchain(libs.versions.java.get().toInt())
+            jvmToolchain {
+                languageVersion = JavaLanguageVersion.of(libs.versions.java.get().toInt())
+                vendor = JvmVendorSpec.JETBRAINS
+            }
         }
     }
     plugins.withId("org.jetbrains.kotlin.android") {
@@ -49,7 +54,23 @@ subprojects {
                 optIn.addAll(commonOptIn)
                 jvmTarget.set(JvmTarget.fromTarget(libs.versions.java.get()))
             }
-            jvmToolchain(libs.versions.java.get().toInt())
+            jvmToolchain {
+                languageVersion = JavaLanguageVersion.of(libs.versions.java.get().toInt())
+                vendor = JvmVendorSpec.JETBRAINS
+            }
+        }
+    }
+    plugins.withId("org.jetbrains.kotlin.jvm") {
+        extensions.configure<KotlinJvmExtension> {
+            compilerOptions {
+                allWarningsAsErrors.set(true)
+                freeCompilerArgs.addAll(freeArgs)
+                optIn.addAll(commonOptIn)
+            }
+            jvmToolchain {
+                languageVersion = JavaLanguageVersion.of(libs.versions.java.get().toInt())
+                vendor = JvmVendorSpec.JETBRAINS
+            }
         }
     }
 

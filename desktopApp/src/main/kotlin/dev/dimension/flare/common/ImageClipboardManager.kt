@@ -5,6 +5,8 @@ import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.platform.NativeClipboard
 import androidx.compose.ui.platform.awtClipboard
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.awt.HeadlessException
 import java.awt.Image
 import java.awt.Toolkit
@@ -30,32 +32,36 @@ class ImageClipboardManager(
     }
 
     @OptIn(ExperimentalUuidApi::class)
-    override suspend fun getClipEntry(): ClipEntry? {
-        if (systemClipboard?.isDataFlavorAvailable(DataFlavor.imageFlavor) == true) {
-            systemClipboard?.getData(DataFlavor.imageFlavor)?.let { data ->
-                when (data) {
-                    is BufferedImage -> {
-                        val file = File.createTempFile(Uuid.random().toString(), ".png")
-                        javax.imageio.ImageIO.write(data, "png", file)
-                        onImagePasted(file)
-                    }
+    override suspend fun getClipEntry(): ClipEntry? =
+        withContext(Dispatchers.IO) {
+            if (systemClipboard?.isDataFlavorAvailable(DataFlavor.imageFlavor) == true) {
+                systemClipboard?.getData(DataFlavor.imageFlavor)?.let { data ->
+                    when (data) {
+                        is BufferedImage -> {
+                            val file = File.createTempFile(Uuid.random().toString(), ".png")
+                            javax.imageio.ImageIO.write(data, "png", file)
+                            onImagePasted(file)
+                        }
 
-                    is Image -> {
-                        val bufferedImage = toMaxResolutionBufferedImage(data)
-                        val file = File.createTempFile(Uuid.random().toString(), ".png")
-                        javax.imageio.ImageIO.write(bufferedImage, "png", file)
-                        onImagePasted(file)
+                        is Image -> {
+                            val bufferedImage = toMaxResolutionBufferedImage(data)
+                            val file = File.createTempFile(Uuid.random().toString(), ".png")
+                            javax.imageio.ImageIO.write(bufferedImage, "png", file)
+                            onImagePasted(file)
+                        }
                     }
                 }
+                null
+            } else {
+                val transferable = systemClipboard?.getContents(null)
+                val flavors = transferable?.transferDataFlavors
+                if (transferable != null && flavors != null && flavors.size != 0) {
+                    ClipEntry(transferable)
+                } else {
+                    null
+                }
             }
-            return null
-        } else {
-            val transferable = systemClipboard?.getContents(null) ?: return null
-            val flavors = transferable.transferDataFlavors
-            if (flavors?.size == 0) return null
-            return ClipEntry(transferable)
         }
-    }
 
     override suspend fun setClipEntry(clipEntry: ClipEntry?) {
         val transferable = clipEntry?.nativeClipEntry as? Transferable

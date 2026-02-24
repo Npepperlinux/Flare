@@ -6,18 +6,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalUriHandler
 import dev.dimension.flare.LocalWindowPadding
 import dev.dimension.flare.common.OnDeepLink
-import dev.dimension.flare.common.WebViewBridge
 import dev.dimension.flare.ui.model.UiApplication
 import dev.dimension.flare.ui.presenter.login.VVOLoginPresenter
 import dev.dimension.flare.ui.presenter.login.XQTLoginPresenter
 import dev.dimension.flare.ui.screen.login.ServiceSelectionScreenContent
 import moe.tlaster.precompose.molecule.producePresenter
-import org.koin.compose.koinInject
 
 @Composable
-internal fun ServiceSelectScreen(onBack: () -> Unit) {
+internal fun ServiceSelectScreen(
+    onBack: () -> Unit,
+    onWebViewLogin: (url: String, cookieCallback: (cookies: String?) -> Boolean) -> Unit,
+) {
     val uriHandler = LocalUriHandler.current
-    val webviewBridge = koinInject<WebViewBridge>()
+//    val webviewBridge = koinInject<WebViewBridge>()
     val xqtLoginState by producePresenter("xqt_login_state") {
         remember {
             XQTLoginPresenter(toHome = onBack)
@@ -31,9 +32,9 @@ internal fun ServiceSelectScreen(onBack: () -> Unit) {
     ServiceSelectionScreenContent(
         contentPadding = LocalWindowPadding.current,
         onXQT = {
-            webviewBridge.openAndWaitCookies(
+            onWebViewLogin.invoke(
                 "https://${UiApplication.XQT.host}",
-                callback = { cookies ->
+                { cookies ->
                     if (cookies.isNullOrEmpty()) {
                         false
                     } else {
@@ -47,9 +48,9 @@ internal fun ServiceSelectScreen(onBack: () -> Unit) {
             )
         },
         onVVO = {
-            webviewBridge.openAndWaitCookies(
+            onWebViewLogin.invoke(
                 UiApplication.VVo.loginUrl,
-                callback = { cookies ->
+                { cookies ->
                     if (cookies.isNullOrEmpty()) {
                         false
                     } else {

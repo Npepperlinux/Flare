@@ -32,9 +32,11 @@ import dev.dimension.flare.data.model.AppearanceSettings
 import dev.dimension.flare.data.model.AvatarShape
 import dev.dimension.flare.data.model.LocalAppearanceSettings
 import dev.dimension.flare.data.model.Theme
+import dev.dimension.flare.data.model.VideoAutoplay
 import dev.dimension.flare.data.repository.SettingsRepository
 import dev.dimension.flare.ui.component.ComponentAppearance
 import dev.dimension.flare.ui.component.LocalComponentAppearance
+import dev.dimension.flare.ui.component.platform.LocalWifiState
 import dev.dimension.flare.ui.humanizer.updateTimeFormatterLocale
 import dev.dimension.flare.ui.model.collectAsUiState
 import dev.dimension.flare.ui.model.onSuccess
@@ -42,7 +44,10 @@ import io.github.composefluent.ExperimentalFluentApi
 import io.github.composefluent.FluentTheme
 import io.github.composefluent.darkColors
 import io.github.composefluent.lightColors
-import io.github.kdroidfilter.platformtools.darkmodedetector.isSystemInDarkMode
+import io.github.kdroidfilter.nucleus.darkmodedetector.isSystemInDarkMode
+import io.github.kdroidfilter.nucleus.window.DecoratedWindowDefaults
+import io.github.kdroidfilter.nucleus.window.NucleusDecoratedWindowTheme
+import io.github.kdroidfilter.nucleus.window.styling.LocalTitleBarStyle
 import kotlinx.coroutines.launch
 import org.apache.commons.lang3.SystemUtils
 import org.koin.compose.koinInject
@@ -109,16 +114,12 @@ internal fun WindowScope.ProvideComposeWindow(content: @Composable () -> Unit) {
     CompositionLocalProvider(
         LocalComposeWindow provides composeWindow,
         LocalWindowPadding provides
-            if (SystemUtils.IS_OS_MAC) {
-                PaddingValues(
-                    start = 0.dp,
-                    top = 24.dp + 8.dp,
-                    end = 0.dp,
-                    bottom = 8.dp,
-                )
-            } else {
-                PaddingValues(vertical = 8.dp)
-            },
+            PaddingValues(
+                start = 0.dp,
+                top = LocalTitleBarStyle.current.metrics.height + 8.dp,
+                end = 0.dp,
+                bottom = 8.dp,
+            ),
     ) {
         content.invoke()
     }
@@ -231,7 +232,12 @@ internal fun ProvideThemeSettings(content: @Composable () -> Unit) {
                         showLinkPreview = appearanceSettings.showLinkPreview,
                         showMedia = appearanceSettings.showMedia,
                         showSensitiveContent = appearanceSettings.showSensitiveContent,
-                        videoAutoplay = ComponentAppearance.VideoAutoplay.NEVER,
+                        videoAutoplay =
+                            when (appearanceSettings.videoAutoplay) {
+                                VideoAutoplay.ALWAYS -> ComponentAppearance.VideoAutoplay.ALWAYS
+                                VideoAutoplay.WIFI -> ComponentAppearance.VideoAutoplay.NEVER
+                                VideoAutoplay.NEVER -> ComponentAppearance.VideoAutoplay.NEVER
+                            },
                         expandMediaSize = appearanceSettings.expandMediaSize,
                         compatLinkPreview = appearanceSettings.compatLinkPreview,
                         aiConfig =
@@ -245,11 +251,48 @@ internal fun ProvideThemeSettings(content: @Composable () -> Unit) {
                         showPlatformLogo = appearanceSettings.showPlatformLogo,
                     )
                 },
+            LocalWifiState provides true,
             content = {
                 key(appSettings.language) {
-                    content.invoke()
+                    ProvideNucleusDecoratedWindowTheme(
+                        isDark = isDarkTheme(),
+                    ) {
+                        content.invoke()
+                    }
                 }
             },
         )
     }
+}
+
+@Composable
+internal fun ProvideNucleusDecoratedWindowTheme(
+    isDark: Boolean = true,
+    content: @Composable () -> Unit,
+) {
+    val titleBarStyle =
+        if (isDark) {
+            DecoratedWindowDefaults.darkTitleBarStyle()
+        } else {
+            DecoratedWindowDefaults.lightTitleBarStyle()
+        }.let {
+            it.copy(
+                metrics =
+                    it.metrics.copy(
+                        height =
+                            if (SystemUtils.IS_OS_MAC_OSX) {
+                                24.dp
+                            } else if (SystemUtils.IS_OS_WINDOWS) {
+                                32.dp
+                            } else {
+                                16.dp
+                            },
+                    ),
+            )
+        }
+    NucleusDecoratedWindowTheme(
+        titleBarStyle = titleBarStyle,
+        isDark = isDark,
+        content = content,
+    )
 }

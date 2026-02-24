@@ -30,9 +30,11 @@ jobs:
           submodules: true
       - name: Set up JDK
         uses: actions/setup-java@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          distribution: 'microsoft'
-          java-version: 21
+          distribution: 'jetbrains'
+          java-version: 25
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
