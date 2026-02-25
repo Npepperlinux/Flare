@@ -651,6 +651,7 @@ public data class MixedTimelineTabItem(
         get() =
             buildString {
                 append("mixed_timeline")
+                append(metaData.title.toString())
                 subTimelineTabItem.forEach { item ->
                     append(item.key)
                 }
